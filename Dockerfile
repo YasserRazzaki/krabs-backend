@@ -28,7 +28,7 @@ RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available
 # 5. Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 6. Donner les bons droits sur les dossiers var/ (cache et logs)
-RUN chown -R www-data:www-data /var/www/html/var
+# 6. Créer le dossier var/ et donner les bons droits sur le cache et les logs
+RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var
 
 EXPOSE 80
