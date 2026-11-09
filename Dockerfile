@@ -28,11 +28,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # 5. Copier UNIQUEMENT composer.json et composer.lock en premier
 COPY composer.json composer.lock ./
 
-# 6. Installer les dépendances SANS exécuter les scripts tout de suite (évite l'erreur bin/console)
+# 6. Installer les dépendances SANS exécuter les scripts tout de suite
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# 7. MAINTENANT, copier le reste du code source (contient bin/console, src/, etc.)
+# 7. MAINTENANT, copier le reste du code source
 COPY . /var/www/html
+
+# 7.bis Créer un fichier .env vide pour éviter l'erreur de Dotenv pendant le build
+RUN touch .env
 
 # 8. Exécuter enfin les scripts post-installation de Composer (cache:clear, etc.)
 RUN composer run-script post-install-cmd --no-interaction
