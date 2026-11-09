@@ -16,19 +16,28 @@ RUN apt-get update && apt-get install -y \
     zip \
     opcache
 
-# 2. Activer mod_rewrite pour Apache (essentiel pour les routes Symfony)
+# 2. Activer mod_rewrite pour Apache
 RUN a2enmod rewrite
 
-# 3. Copier le code source de l'application
-COPY . /var/www/html
+# 3. Définir le dossier de travail par défaut
+WORKDIR /var/www/html
 
-# 4. Rediriger le DocumentRoot d'Apache vers le dossier public/ de Symfony
-RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
-
-# 5. Installer Composer
+# 4. Installer Composer depuis l'image officielle
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 6. Créer le dossier var/ et donner les bons droits sur le cache et les logs
-RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var
+# 5. Copier d'abord les fichiers de configuration de Composer (optimise le cache Docker)
+COPY composer.json composer.lock ./
+
+# 6. Installer les dépendances PHP pour la production
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# 7. Copier le reste du code source de l'application
+COPY . /var/www/html
+
+# 8. Rediriger le DocumentRoot d'Apache vers le dossier public/ de Symfony
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
+
+# 9. Créer le dossier var/ et donner les bons droits sur var/ et vendor/
+RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var /var/www/html/vendor
 
 EXPOSE 80
