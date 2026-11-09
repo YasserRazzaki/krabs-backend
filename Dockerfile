@@ -19,25 +19,28 @@ RUN apt-get update && apt-get install -y \
 # 2. Activer mod_rewrite pour Apache
 RUN a2enmod rewrite
 
-# 3. Définir le dossier de travail par défaut
+# 3. Définir le dossier de travail
 WORKDIR /var/www/html
 
 # 4. Installer Composer depuis l'image officielle
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 5. Copier d'abord les fichiers de configuration de Composer (optimise le cache Docker)
+# 5. Copier UNIQUEMENT composer.json et composer.lock en premier
 COPY composer.json composer.lock ./
 
-# 6. Installer les dépendances PHP pour la production
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# 6. Installer les dépendances SANS exécuter les scripts tout de suite (évite l'erreur bin/console)
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# 7. Copier le reste du code source de l'application
+# 7. MAINTENANT, copier le reste du code source (contient bin/console, src/, etc.)
 COPY . /var/www/html
 
-# 8. Rediriger le DocumentRoot d'Apache vers le dossier public/ de Symfony
+# 8. Exécuter enfin les scripts post-installation de Composer (cache:clear, etc.)
+RUN composer run-script post-install-cmd --no-interaction
+
+# 9. Rediriger le DocumentRoot d'Apache vers public/
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
-# 9. Créer le dossier var/ et donner les bons droits sur var/ et vendor/
+# 10. Créer le dossier var/ et donner les bons droits sur var/ et vendor/
 RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var /var/www/html/vendor
 
 EXPOSE 80
