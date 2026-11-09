@@ -29,7 +29,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
 
 # 6. Installer les dépendances SANS exécuter les scripts tout de suite
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+RUN composer install --optimize-autoloader --no-scripts --no-interaction
 
 # 7. MAINTENANT, copier le reste du code source
 COPY . /var/www/html
